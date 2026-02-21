@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopBot AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:#1db954;--green2:#1ed760;--black:#121212;--surface:#181818;
+  --card:#282828;--border:#333;--text:#fff;--muted:#b3b3b3;--faint:#535353;
+  --pink:#e91e8c;--orange:#ff6437;--blue:#509bf5;--yellow:#f59b23;--red:#e74c3c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Figtree',sans-serif;background:var(--black);color:var(--text);display:flex;align-items:center;justify-content:center}
+.shell{width:100vw;height:100vh;max-width:500px;display:flex;flex-direction:column;background:var(--black);position:relative}
+
+/* TOPBAR */
+.topbar{background:linear-gradient(180deg,#1a3a2a 0%,var(--black) 100%);padding:1.1rem 1.25rem .7rem;flex-shrink:0}
+.topbar-inner{display:flex;align-items:center;gap:.75rem}
+.logo{width:44px;height:44px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;transition:all .3s}
+.logo.speaking{background:linear-gradient(135deg,var(--green),var(--blue));animation:logoPulse 1s ease-in-out infinite}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(29,185,84,.4)}50%{box-shadow:0 0 0 12px rgba(29,185,84,0)}}
+.bot-name{font-size:1rem;font-weight:700}
+.bot-sub{font-size:.72rem;color:var(--muted);margin-top:.1rem;display:flex;align-items:center;gap:.4rem}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block}
+.bot-info{flex:1}
+.tbtn{width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.07);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all .15s}
+.tbtn:hover{background:rgba(255,255,255,.14);color:var(--text)}
+
+/* BANNERS */
+.banner{padding:.5rem 1.25rem;font-size:.72rem;display:none;flex-shrink:0;align-items:center;gap:.6rem;flex-wrap:wrap}
+.banner.show{display:flex}
+.banner.warn{background:#1a1200;border-bottom:1px solid var(--yellow);color:var(--yellow)}
+.banner.err{background:#1a0800;border-bottom:1px solid var(--orange);color:var(--orange)}
+.banner.ok{background:#0a1a0a;border-bottom:1px solid var(--green);color:var(--green)}
+.bbn{background:rgba(255,255,255,.15);color:inherit;border:1px solid currentColor;border-radius:12px;padding:.2rem .65rem;font-size:.65rem;font-family:'Figtree',sans-serif;cursor:pointer;font-weight:600}
+
+/* AUDIO ROW */
+.audio-row{display:flex;gap:.5rem;padding:.55rem 1.25rem;flex-shrink:0;align-items:center}
+.cap{display:flex;align-items:center;gap:.4rem;padding:.35rem .85rem .35rem .55rem;border-radius:20px;border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:all .2s;font-size:.72rem;color:var(--muted);user-select:none}
+.cap:hover{border-color:var(--green);color:var(--text)}
+.cap.on{border-color:var(--green);background:rgba(29,185,84,.1);color:var(--green)}
+.cap.err{border-color:var(--red);background:rgba(231,76,60,.08);color:var(--red)}
+.cdot{width:8px;height:8px;border-radius:50%;background:var(--faint);transition:background .2s}
+.cap.on .cdot{background:var(--green)}
+.cap.err .cdot{background:var(--red)}
+.spd{background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:.7rem;font-family:'Figtree',sans-serif;cursor:pointer;outline:none;padding:.3rem .5rem;border-radius:8px}
+.spd option{background:var(--card)}
+
+/* FEED */
+.feed{flex:1;overflow-y:auto;padding:.5rem 1.25rem 1rem;display:flex;flex-direction:column;gap:.75rem;scroll-behavior:smooth}
+.feed::-webkit-scrollbar{width:4px}
+.feed::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.dpill{text-align:center;margin:.25rem 0}
+.dpill span{background:var(--surface);color:var(--faint);font-size:.65rem;padding:.2rem .75rem;border-radius:20px;border:1px solid var(--border);font-weight:500}
+.mrow{display:flex;gap:.6rem;animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.mrow.user{flex-direction:row-reverse}
+.mav{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;flex-shrink:0;margin-top:.1rem}
+.mrow.bot .mav{background:var(--green)}
+.mrow.user .mav{background:var(--pink)}
+.mbody{max-width:78%;display:flex;flex-direction:column;gap:.2rem}
+.mrow.user .mbody{align-items:flex-end}
+.bbl{padding:.65rem .9rem;border-radius:18px;font-size:.88rem;line-height:1.5}
+.mrow.bot  .bbl{background:var(--card);color:var(--text);border-radius:4px 18px 18px 18px}
+.mrow.user .bbl{background:var(--green);color:#000;font-weight:500;border-radius:18px 4px 18px 18px}
+.mrow.user .bbl strong{color:#000}
+.lbtn{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.65rem;font-family:'Figtree',sans-serif;cursor:pointer;transition:all .15s;margin-top:.2rem}
+.lbtn:hover{border-color:var(--green);color:var(--green)}
+.lbtn.playing{border-color:var(--green);color:var(--green);background:rgba(29,185,84,.08)}
+.mtime{font-size:.6rem;color:var(--faint);padding:0 .3rem}
+
+/* TYPING */
+.trow{display:flex;gap:.6rem;align-items:flex-end}
+.tbub{background:var(--card);border-radius:4px 18px 18px 18px;padding:.75rem 1rem;display:flex;gap:.35rem;align-items:center}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--faint);animation:td 1.4s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.2s}.tdot:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,60%,100%{transform:scale(1);background:var(--faint)}30%{transform:scale(1.3);background:var(--green)}}
+
+/* CHIPS */
+.chips{display:flex;gap:.4rem;padding:.4rem 1.25rem;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:.4rem .9rem;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.72rem;font-family:'Figtree',sans-serif;cursor:pointer;transition:all .15s;flex-shrink:0;font-weight:500}
+.chip:hover{border-color:var(--green);color:var(--green);background:rgba(29,185,84,.07)}
+
+/* INPUT */
+.inputbar{padding:.75rem 1.25rem 1rem;display:flex;align-items:flex-end;gap:.6rem;flex-shrink:0;background:linear-gradient(0deg,var(--black) 60%,transparent)}
+.iwrap{flex:1;background:var(--card);border-radius:24px;border:1.5px solid var(--border);display:flex;align-items:flex-end;padding:.55rem .9rem;gap:.5rem;transition:border-color .2s}
+.iwrap:focus-within{border-color:var(--green)}
+.iwrap.rec{border-color:var(--pink);background:#1a1218}
+.itxt{flex:1;background:transparent;border:none;color:var(--text);font-family:'Figtree',sans-serif;font-size:.88rem;outline:none;resize:none;max-height:100px;line-height:1.4;scrollbar-width:none}
+.itxt::placeholder{color:var(--faint)}
+.itxt.rec{color:var(--pink)}
+.mbtn{width:28px;height:28px;border-radius:50%;border:none;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;transition:all .2s;flex-shrink:0}
+.mbtn:hover{color:var(--green)}
+.mbtn.rec{color:var(--pink);animation:mb .5s ease-in-out infinite}
+.mbtn.hidden{display:none}
+@keyframes mb{0%,100%{opacity:1}50%{opacity:.2}}
+.sbtn{width:44px;height:44px;border-radius:50%;border:none;background:var(--green);color:#000;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;opacity:0;transform:scale(0);font-weight:700}
+.sbtn.show{opacity:1;transform:scale(1)}
+.sbtn:hover{background:var(--green2);transform:scale(1.07)}
+
+/* REC TOAST */
+.rtst{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--pink);border-radius:30px;padding:.55rem 1.25rem;display:none;align-items:center;gap:.6rem;font-size:.78rem;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.5);white-space:nowrap;z-index:50}
+.rtst.show{display:flex;animation:tin .2s ease}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) scale(.9)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+.rwav{display:flex;gap:2px;align-items:center}
+.rbar{width:3px;border-radius:3px;background:var(--pink);animation:rb .6s ease-in-out infinite alternate}
+.rbar:nth-child(1){height:8px}.rbar:nth-child(2){height:14px}.rbar:nth-child(3){height:20px}.rbar:nth-child(4){height:12px}.rbar:nth-child(5){height:18px}
+@keyframes rb{from{transform:scaleY(.5)}to{transform:scaleY(1.2)}}
+.rtimer{font-family:monospace;color:var(--pink);font-weight:600}
+
+/* MODAL */
+.mbg{position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:100}
+.mdl{background:var(--card);border-radius:16px;padding:1.75rem;width:calc(100% - 2.5rem);max-width:320px;border:1px solid var(--border);animation:mp .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.mico{font-size:2.5rem;text-align:center;margin-bottom:.9rem}
+.mdl h2{color:var(--text);font-size:1.1rem;font-weight:700;text-align:center;margin-bottom:.3rem}
+.mdl p{color:var(--muted);font-size:.78rem;text-align:center;margin-bottom:1.25rem;line-height:1.6}
+.mdl label{display:block;color:var(--muted);font-size:.65rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem}
+.mdl input{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:.65rem .85rem;color:var(--text);font-size:.85rem;font-family:'Figtree',sans-serif;outline:none;margin-bottom:.9rem;transition:border-color .15s}
+.mdl input:focus{border-color:var(--green)}
+.mcta{width:100%;background:var(--green);border:none;border-radius:30px;padding:.8rem;color:#000;font-size:.9rem;font-weight:700;font-family:'Figtree',sans-serif;cursor:pointer}
+.mcta:hover{background:var(--green2)}
+.mnote{margin-top:.85rem;background:var(--surface);border-radius:8px;padding:.65rem .8rem;font-size:.68rem;color:var(--muted);line-height:1.7;border:1px solid var(--border)}
+.mnote code{color:var(--green);font-family:monospace;background:rgba(29,185,84,.08);padding:.1rem .3rem;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="logo" id="logo">🛒</div>
+      <div class="bot-info">
+        <div class="bot-name">ShopBot</div>
+        <div class="bot-sub"><span class="sdot" id="sdot"></span><span id="stxt">ModeExpress · en ligne</span></div>
+      </div>
+      <div style="display:flex;gap:.35rem">
+        <button class="tbtn" onclick="runDiag()" title="Diagnostic audio">🔧</button>
+        <button class="tbtn" onclick="clearChat()">↺</button>
+        <button class="tbtn" onclick="openModal()">⚙</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANNER (diagnostic, erreurs, succès) -->
+  <div class="banner warn" id="banner">
+    <span id="bannerMsg">⚠️ Message</span>
+    <button class="bbn" id="bannerBtn1" onclick="fixMic()" style="display:none">🎤 Autoriser micro</button>
+    <button class="bbn" id="bannerBtn2" onclick="testTTS()" style="display:none">🔊 Tester voix</button>
+    <button class="bbn" onclick="closeBanner()">✕</button>
+  </div>
+
+  <div class="audio-row">
+    <div class="cap" id="sttCap" onclick="toggleSTT()"><div class="cdot"></div>🎤 Micro</div>
+    <div class="cap" id="ttsCap" onclick="toggleTTS()"><div class="cdot"></div>🔊 Lecture</div>
+    <select class="spd" id="spd"><option value="0.8">0.8×</option><option value="1.0" selected>1×</option><option value="1.3">1.3×</option></select>
+    
+  </div>
+
+  <div class="feed" id="feed">
+    <div class="dpill"><span>Aujourd'hui</span></div>
+    <div class="mrow bot">
+      <div class="mav">🛒</div>
+      <div class="mbody">
+        <div class="bbl">Bonjour ! 👋 Je suis <strong>ShopBot</strong>.<br>Cliquez <strong>🔧</strong> pour vérifier micro et voix avant de commencer.</div>
+        <button class="lbtn" id="w_lbtn">▶ Écouter</button>
+        <div class="mtime" id="wtime"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rtst" id="rtst">
+    <div class="rwav"><div class="rbar"></div><div class="rbar"></div><div class="rbar"></div><div class="rbar"></div><div class="rbar"></div></div>
+    <span>En écoute...</span>
+    <span class="rtimer" id="rtimer">0:00</span>
+  </div>
+
+  <div class="chips" id="chips">
+    <div class="chip" onclick="sq('Ma commande #4521 est en retard')">📦 Commande #4521</div>
+    <div class="chip" onclick="sq('Taille L disponible ?')">👕 Stock L</div>
+    <div class="chip" onclick="sq('Politique de retour ?')">↩️ Retours</div>
+    <div class="chip" onclick="sq('Paiement en 3 fois ?')">💳 Paiement</div>
+  </div>
+
+  <div class="inputbar">
+    <div class="iwrap" id="iwrap">
+      <textarea class="itxt" id="itxt" placeholder="Tapez un message..." rows="1"
+        onkeydown="onKey(event)" oninput="onInput()"></textarea>
+      <button class="mbtn hidden" id="mbtn"
+        onmousedown="startRec(event)" onmouseup="stopRec()"
+        ontouchstart="startRec(event)" ontouchend="stopRec()">🎤</button>
+    </div>
+    <button class="sbtn" id="sbtn" onclick="send()">➜</button>
+  </div>
+
+</div>
+
+<div class="mbg" id="mbg">
+  <div class="mdl">
+    <div class="mico">🎵</div>
+    <h2>Connexion ShopBot</h2>
+    <p>Ouvrez toujours via <code style="color:var(--green);font-family:monospace">http://localhost:8000</code> — jamais en double-cliquant le fichier.</p>
+    <label>URL API</label>
+    <input type="text" id="apiIn" value="/api"/>
+    <label>SESSION ID</label>
+    <input type="text" id="sessIn" value="user-1"/>
+    <button class="mcta" onclick="saveConf()">✓ Connecter</button>
+    <div class="mnote">
+      ✅ Micro : fonctionne sur <code>http://localhost:8000</code><br>
+      ❌ Micro bloqué si ouvert via <code>file://</code><br>
+      🌐 Navigateur requis : <strong>Edge ou Chrome</strong>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ CONFIG ══
+let API='/api', SID='user-1';
+let busy=false, sttOn=false, ttsOn=false;
+let isRec=false, recog=null, recTmr=null, recSec=0;
+let playingBtn=null;
+
+// Init
+document.getElementById('wtime').textContent = T();
+API  = localStorage.getItem('sb_api')  || '/api';
+SID  = localStorage.getItem('sb_sid')  || 'user-1';
+document.getElementById('apiIn').value  = API;
+document.getElementById('sessIn').value = SID;
+if (localStorage.getItem('sb_ok')) { document.getElementById('mbg').style.display='none'; ping(); }
+
+document.getElementById('w_lbtn').onclick = function(){ speak('Bonjour ! Je suis ShopBot. Cliquez sur Test audio pour vérifier micro et voix avant de commencer.', this); };
+
+// Précharger les voix dès le chargement
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+// ══ BANNER ══
+function showBanner(msg, type='warn', b1=false, b2=false) {
+  const el = document.getElementById('banner');
+  el.className = `banner ${type}`;
+  document.getElementById('bannerMsg').textContent = msg;
+  document.getElementById('bannerBtn1').style.display = b1 ? 'inline-flex' : 'none';
+  document.getElementById('bannerBtn2').style.display = b2 ? 'inline-flex' : 'none';
+  el.classList.add('show');
+}
+function closeBanner() { document.getElementById('banner').classList.remove('show'); }
+function autoBanner(msg, type='warn') { showBanner(msg, type); setTimeout(closeBanner, 5000); }
+
+// ══ PING ══
+async function ping() {
+  try {
+    const r = await fetch(`${API}/health`, {signal:AbortSignal.timeout(3000)});
+    if (r.ok) { setSt('online'); } else setSt('offline');
+  } catch { setSt('offline'); }
+}
+
+// ══ DIAGNOSTIC ══
+async function runDiag() {
+  showBanner('🔍 Diagnostic en cours...', 'warn');
+  const res = [];
+
+  // 1. TTS
+  if (!('speechSynthesis' in window)) {
+    res.push('❌ TTS non supporté');
+  } else {
+    res.push('✅ TTS supporté');
+  }
+
+  // 2. STT
+  const hasSR = ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+  res.push(hasSR ? '✅ STT supporté' : '❌ STT non supporté (Edge/Chrome requis)');
+
+  // 3. Micro permission
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t=>t.stop());
+    res.push('✅ Micro autorisé');
+  } catch(e) {
+    if (e.name==='NotAllowedError') res.push('❌ Micro bloqué → cliquez Autoriser micro');
+    else if (e.name==='NotFoundError') res.push('❌ Aucun micro détecté');
+    else res.push(`❌ Micro : ${e.name}`);
+  }
+
+  const hasErr = res.some(r=>r.startsWith('❌'));
+  showBanner(res.join('  ·  '), hasErr ? 'warn' : 'ok',
+    res.some(r=>r.includes('bloqué')),
+    res.some(r=>r.includes('TTS supporté'))
+  );
+
+  // Test TTS automatique
+  testTTS();
+}
+
+async function fixMic() {
+  showBanner('🎤 Demande de permission micro...', 'warn');
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t=>t.stop());
+    autoBanner('✅ Micro autorisé ! Activez le bouton 🎤 Micro.', 'ok');
+    document.getElementById('sttCap').classList.remove('err');
+  } catch(e) {
+    showBanner(`❌ ${e.name} — Allez dans Paramètres Edge → Confidentialité → Micro → Autoriser localhost`, 'err');
+  }
+}
+
+function testTTS() {
+  if (!('speechSynthesis' in window)) { autoBanner('❌ TTS non disponible', 'err'); return; }
+  window.speechSynthesis.cancel();
+
+  const doIt = () => {
+    const u = new SpeechSynthesisUtterance('Test audio. Vous devriez entendre cette voix en français.');
+    u.lang='fr-FR'; u.rate=1.0; u.volume=1.0; u.pitch=1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const fr = voices.find(v=>v.lang&&v.lang.startsWith('fr')) || voices[0];
+    if (fr) { u.voice=fr; }
+    u.onstart = () => showBanner('🔊 Vous devriez entendre la voix...', 'warn', false, false);
+    u.onend   = () => autoBanner('✅ TTS fonctionne ! Si pas de son → vérifiez le volume de votre PC.', 'ok');
+    u.onerror = (e) => autoBanner(`❌ TTS erreur : ${e.error} — vérifiez le volume`, 'err');
+    window.speechSynthesis.speak(u);
+  };
+
+  const v = window.speechSynthesis.getVoices();
+  if (v.length > 0) doIt();
+  else { window.speechSynthesis.onvoiceschanged = doIt; setTimeout(doIt, 800); }
+}
+
+// ══ STT TOGGLE ══
+async function toggleSTT() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    autoBanner('❌ Reconnaissance vocale non supportée. Utilisez Edge ou Chrome.', 'err'); return;
+  }
+  // Demander la permission micro avant d'activer
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({audio:true});
+    s.getTracks().forEach(t=>t.stop());
+  } catch(e) {
+    if (e.name==='NotAllowedError') showBanner('❌ Micro bloqué. Autorisez dans Edge : Paramètres → Cookies → Permissions du site → Micro → localhost → Autoriser', 'err', true, false);
+    else autoBanner(`❌ Micro : ${e.name}`, 'err');
+    document.getElementById('sttCap').classList.add('err');
+    return;
+  }
+  sttOn = !sttOn;
+  document.getElementById('sttCap').classList.toggle('on', sttOn);
+  document.getElementById('sttCap').classList.remove('err');
+  document.getElementById('mbtn').classList.toggle('hidden', !sttOn);
+  if (sttOn) autoBanner('✅ Micro activé ! Maintenez le bouton 🎤 pour parler.', 'ok');
+}
+
+// ══ TTS TOGGLE ══
+function toggleTTS() {
+  if (!('speechSynthesis' in window)) { autoBanner('❌ TTS non supporté', 'err'); return; }
+  ttsOn = !ttsOn;
+  document.getElementById('ttsCap').classList.toggle('on', ttsOn);
+  if (!ttsOn) { window.speechSynthesis.cancel(); document.getElementById('logo').classList.remove('speaking'); }
+  else {
+    autoBanner('✅ Lecture auto activée — ShopBot parlera automatiquement.', 'ok');
+    setTimeout(testTTS, 200);
+  }
+}
+
+// ══ SPEAK (TTS) ══
+function speak(text, btn) {
+  if (!('speechSynthesis' in window)) { autoBanner('❌ TTS non disponible sur ce navigateur.', 'err'); return; }
+
+  // Stop si déjà en lecture
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+    document.getElementById('logo').classList.remove('speaking');
+    setSt('online');
+    if (playingBtn) { playingBtn.textContent='▶ Écouter'; playingBtn.classList.remove('playing'); }
+    if (playingBtn === btn) { playingBtn=null; return; }
+  }
+
+  playingBtn = btn;
+
+  const clean = text
+    .replace(/[\u{1F300}-\u{1FFFF}|\u{1F600}-\u{1F64F}|\u{2600}-\u{26FF}]/gu, '')
+    .replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1')
+    .replace(/<br\s*\/?>/gi,'. ').replace(/<[^>]+>/g,'').trim();
+
+  const doSpeak = () => {
+    const u = new SpeechSynthesisUtterance(clean);
+    u.lang   = 'fr-FR';
+    u.rate   = parseFloat(document.getElementById('spd').value);
+    u.volume = 1.0;
+    u.pitch  = 1.0;
+
+    const voices = window.speechSynthesis.getVoices();
+    const fr = voices.filter(v=>v.lang&&v.lang.startsWith('fr'));
+    // Préférer les voix natives (pas Google)
+    const best = fr.find(v=>!v.name.toLowerCase().includes('google')) || fr[0] || voices[0];
+    if (best) u.voice = best;
+
+    u.onstart = () => {
+      document.getElementById('logo').classList.add('speaking');
+      setSt('speaking');
+      if (btn) { btn.textContent='⏸ Pause'; btn.classList.add('playing'); }
+    };
+    u.onend = () => {
+      document.getElementById('logo').classList.remove('speaking');
+      setSt('online');
+      if (btn) { btn.textContent='▶ Écouter'; btn.classList.remove('playing'); playingBtn=null; }
+    };
+    u.onerror = (e) => {
+      document.getElementById('logo').classList.remove('speaking');
+      setSt('online');
+      if (btn) { btn.textContent='▶ Écouter'; btn.classList.remove('playing'); playingBtn=null; }
+      if (e.error !== 'interrupted') autoBanner(`❌ TTS : ${e.error} — vérifiez le volume`, 'err');
+    };
+    window.speechSynthesis.speak(u);
+  };
+
+  const v = window.speechSynthesis.getVoices();
+  if (v.length > 0) doSpeak();
+  else { window.speechSynthesis.onvoiceschanged = doSpeak; setTimeout(doSpeak, 600); }
+}
+
+// ══ STT RECORDING ══
+function startRec(e) {
+  if(e) e.preventDefault();
+  if (!sttOn||isRec||busy) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recog = new SR();
+  recog.lang='fr-FR'; recog.continuous=false; recog.interimResults=true;
+  recog.onstart = () => {
+    isRec=true;
+    document.getElementById('mbtn').classList.add('rec');
+    document.getElementById('iwrap').classList.add('rec');
+    document.getElementById('itxt').classList.add('rec');
+    document.getElementById('itxt').placeholder='🎤 Parlez maintenant...';
+    document.getElementById('rtst').classList.add('show');
+    recSec=0;
+    recTmr=setInterval(()=>{ recSec++; const m=Math.floor(recSec/60),s=recSec%60; document.getElementById('rtimer').textContent=`${m}:${String(s).padStart(2,'0')}`; },1000);
+  };
+  recog.onresult = e => {
+    const txt = Array.from(e.results).map(r=>r[0].transcript).join('');
+    document.getElementById('itxt').value=txt; onInput();
+    if (e.results[e.results.length-1].isFinal) { stopRec(); setTimeout(send,400); }
+  };
+  recog.onerror = e => {
+    stopRec();
+    const msgs = {
+      'no-speech':'⚠️ Aucune voix détectée. Réessayez.',
+      'audio-capture':'❌ Micro non accessible. Cliquez 🔧 Test audio → Autoriser micro.',
+      'not-allowed':'❌ Micro refusé. Allez dans Paramètres Edge → Confidentialité → Micro.',
+      'network':'⚠️ Erreur réseau pour la reconnaissance vocale.',
+    };
+    autoBanner(msgs[e.error]||`❌ Erreur STT : ${e.error}`, 'err');
+  };
+  recog.onend = () => stopRec();
+  recog.start();
+}
+
+function stopRec() {
+  if(!isRec) return; isRec=false;
+  if(recog) try{recog.stop()}catch(e){}
+  clearInterval(recTmr);
+  document.getElementById('mbtn').classList.remove('rec');
+  document.getElementById('iwrap').classList.remove('rec');
+  document.getElementById('itxt').classList.remove('rec');
+  document.getElementById('itxt').placeholder='Tapez un message...';
+  document.getElementById('rtst').classList.remove('show');
+}
+
+// ══ SEND ══
+async function send() {
+  const txt = document.getElementById('itxt').value.trim();
+  if (!txt||busy) return;
+  document.getElementById('itxt').value='';
+  document.getElementById('itxt').style.height='auto';
+  document.getElementById('sbtn').classList.remove('show');
+  document.getElementById('chips').style.display='none';
+  addMsg('user',txt);
+  busy=true; setSt('thinking'); showTyping(true);
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  try {
+    const r = await fetch(`${API}/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt,session_id:SID}),signal:AbortSignal.timeout(30000)});
+    showTyping(false);
+    if (!r.ok) { const e=await r.json(); addMsg('bot',`❌ Erreur ${r.status} : ${e.detail}`,false); }
+    else {
+      const d=await r.json();
+      const btn = addMsg('bot',d.response,true);
+      if (ttsOn && btn) setTimeout(()=>speak(d.response,btn),300);
+    }
+    setSt('online');
+  } catch(e) {
+    showTyping(false); setSt('offline');
+    addMsg('bot','⚠️ Impossible de joindre l\'API. Vérifiez que ShopBot tourne.',false);
+  }
+  busy=false;
+}
+
+function sq(t){ document.getElementById('itxt').value=t; onInput(); send(); }
+
+// ══ DOM HELPERS ══
+function addMsg(role, text, withListen=false) {
+  const feed=document.getElementById('feed');
+  const div=document.createElement('div');
+  div.className=`mrow ${role}`;
+  const icon=role==='bot'?'🛒':'👤';
+  div.innerHTML=`
+    <div class="mav">${icon}</div>
+    <div class="mbody">
+      <div class="bbl">${fmt(text)}</div>
+      ${withListen&&role==='bot'?'<button class="lbtn">▶ Écouter</button>':''}
+      <div class="mtime">${T()}</div>
+    </div>`;
+  feed.appendChild(div);
+  feed.scrollTop=feed.scrollHeight;
+  if (withListen&&role==='bot') {
+    const btn=div.querySelector('.lbtn');
+    btn.onclick=()=>speak(text,btn);
+    return btn;
+  }
+  return null;
+}
+
+function showTyping(show) {
+  let r=document.getElementById('trow');
+  if (show&&!r) {
+    r=document.createElement('div'); r.id='trow'; r.className='trow';
+    r.innerHTML='<div class="mav">🛒</div><div class="tbub"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+    document.getElementById('feed').appendChild(r);
+    document.getElementById('feed').scrollTop=99999;
+  } else if (!show&&r) r.remove();
+}
+
+function fmt(t){ return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>'); }
+
+function setSt(s) {
+  const dot=document.getElementById('sdot'), txt=document.getElementById('stxt');
+  const m={online:['var(--green)','ModeExpress · en ligne'],offline:['var(--orange)','hors ligne'],thinking:['var(--yellow)','réfléchit...'],speaking:['var(--blue)','🔊 lecture...']};
+  const [c,l]=m[s]||m.online;
+  dot.style.background=c; txt.textContent=l;
+}
+
+function onInput() {
+  const el=document.getElementById('itxt');
+  el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px';
+  const has=el.value.trim().length>0;
+  document.getElementById('sbtn').classList.toggle('show',has);
+  if(sttOn) document.getElementById('mbtn').classList.toggle('hidden',has);
+}
+function onKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }
+function T(){ return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function openModal(){ document.getElementById('mbg').style.display='flex'; }
+function saveConf(){
+  API=document.getElementById('apiIn').value.trim().replace(/\/$/,'');
+  SID=document.getElementById('sessIn').value.trim()||'user-1';
+  localStorage.setItem('sb_api',API); localStorage.setItem('sb_sid',SID); localStorage.setItem('sb_ok','1');
+  document.getElementById('mbg').style.display='none'; ping();
+}
+async function clearChat(){
+  try{await fetch(`${API}/reset`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:SID})});}catch{}
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  document.getElementById('logo').classList.remove('speaking');
+  const feed=document.getElementById('feed');
+  feed.innerHTML=`<div class="dpill"><span>Aujourd'hui</span></div><div class="mrow bot"><div class="mav">🛒</div><div class="mbody"><div class="bbl">Conversation réinitialisée 🎵</div><button class="lbtn" id="rl">▶ Écouter</button><div class="mtime">${T()}</div></div></div>`;
+  document.getElementById('rl').onclick=function(){speak('Conversation réinitialisée.',this)};
+  document.getElementById('chips').style.display='flex';
+}
+</script>
+</body>
+</html>
